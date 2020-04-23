@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="UTF-8">
+    <title>用户登录</title>
+    <meta name="renderer" content="webkit|ie-comp|ie-stand">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-siteapp"/>
+    <link rel="stylesheet" href="/static/layui/css/style.css">
+    <link rel="stylesheet" href="/static/layui/css/layui.css"/>
+    <script type="text/javascript" src="/static/layui/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/layui/layui.js"></script>
+</head>
+
+<body class="layui-login">
+<form method="post" class="layui-form" lay-filter="loginFrom">
+    <div class="login-wrap">
+        <div class="login-logo"></div>
+        <div class="login-form" style="padding: 20px 30px">
+            <div class="col">
+                <input name="username" placeholder="用户名" type="text" lay-verify="required" class="login-input">
+                <label class="icon user"></label>
+            </div>
+            <div class="col">
+                <input name="password" lay-verify="required" placeholder="密码" type="password" class="login-input">
+                <label class="icon pwd"></label>
+            </div>
+            <div class="col">
+                <input type="button" value="登录" lay-submit lay-filter="login" class="login-btn" id="loginBtn"/>
+                <input id="register" onclick="registerBtn()" type="button" value="注册" lay-register lay-filter="register"
+                       class="layui-btn"
+                       style="width: 100%;height: 42px;font-size: 18px;border-radius: 3px;margin-top: 10px;letter-spacing: 0.5em;"/>
+            </div>
+        </div>
+    </div>
+    <div class="Footer" style="margin-top: 50px; color: #fff;font-size:16px">
+        Copyright©2019-2020, 本系统由@一如既往，提供技术支持！
+    </div>
+    <div class="Footer" style="margin-top: 5px; color: #fff;font-size:14px">
+        <a href="#" style="color:#fff" target="_blank">备案/许可证编号为：XXXX</a>
+    </div>
+</form>
+<script>
+    $(function () {
+        layui.use(['element', 'layer', 'jquery', 'form'], function () {
+            var layer = layui.layer;
+            var $ = layui.$;
+            var form = layui.form;
+            $("#loginBtn").click(function (){
+                var data = form.val('loginFrom')
+                console.log(JSON.stringify(data))
+                console.log(data)
+                $.ajax({
+                    url: '/loginInto',
+                    type: 'post',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function (result) {
+                        console.log(result.state);
+                        if (result.state == 0) {
+                            layer.msg("登录成功，即将跳转。。。");
+                            location.href = "/index/indexPage"
+                        } else if(result.message=='用户未注册'){
+                            layer.msg("用户未注册")
+                        } else if(result.message=='密码错误'){
+                            layer.msg("密码错误")
+                        }
+                    },
+                    error: function () {
+                        layer.msg("请求失败")
+                    }
+                })
+            });
+            //回车键登录键盘事件监听
+            $(document).keydown(function(event){
+                if(event.keyCode==13){
+                    console.log(event.keyCode);
+                    var data = form.val('loginFrom')
+                    console.log(JSON.stringify(data))
+                    console.log(data)
+                    $.ajax({
+                        url: '/loginInto',
+                        type: 'post',
+                        contentType: 'application/json',
+                        data: JSON.stringify(data),
+                        success: function (result) {
+                            console.log(result.state);
+                            if (result.state == 0) {
+                                layer.msg("登录成功，即将跳转。。。");
+                                location.href = "/index/indexPage"
+                            } else if(result.message=='用户未注册'){
+                                layer.msg("用户未注册")
+                            } else if(result.message=='密码错误'){
+                                layer.msg("密码错误")
+                            }
+                        },
+                        error: function () {
+                            layer.msg("请求失败")
+                        }
+                    })
+                }
+
+
+            });
+        })
+    })
+
+    $("#register").click(function () {
+        location.href = "/index/register"
+    });
+</script>
+</body>
+
+</html>

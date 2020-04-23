@@ -1,0 +1,513 @@
+<head>
+    <meta charset="utf-8">
+    <title>分类列表</title>
+    <link rel="stylesheet" href="/static/layui/css/layui.css"/>
+    <link rel="stylesheet" href="/static/zTree_v3/css/metroStyle/metroStyle.css"/>
+    <!-- 注意：如果你直接复制所有代码到本地，上述css路径需要改成你本地的 -->
+</head>
+<script type="text/javascript" src="/static/layui/js/jquery.min.js"></script>
+<script type="text/javascript" src="/static/layui/layui.js"></script>
+<script type="text/javascript" src="/static/zTree_v3/js/jquery.ztree.all.js"></script>
+<script type="text/javascript" src="/static/zTree_v3/js/jquery.ztree.core.js"></script>
+<script type="text/javascript" src="/static/zTree_v3/js/jquery.ztree.excheck.js"></script>
+<script type="text/javascript" src="/static/zTree_v3/js/jquery.ztree.exedit.js"></script>
+<script type="text/javascript" src="/static/zTree_v3/js/jquery.ztree.exhide.js"></script>
+<script>
+    function dateToStr(date) {
+        var time = new Date(date);
+        var y = time.getFullYear();
+        var M = time.getMonth() + 1;
+        M = M < 10 ? ("0" + M) : M;
+        var d = time.getDate();
+        d = d < 10 ? ("0" + d) : d;
+        var h = time.getHours();
+        h = h < 10 ? ("0" + h) : h;
+        var m = time.getMinutes();
+        m = m < 10 ? ("0" + m) : m;
+        var s = time.getSeconds();
+        s = s < 10 ? ("0" + s) : s;
+        var str = y + "-" + M + "-" + d + " " + h + ":" + m + ":" + s;
+        return str;
+    }
+
+    layui.use(['element', 'layer', 'jquery', 'form', 'table'], function () {
+        var table = layui.table;
+        var layer = layui.layer;
+        var form = layui.form;
+        //第一个实例
+        var classifyInfoDateGrid = table.render({
+            elem: '#classifyInfo',
+            url: '/classify/dataGrid'
+            , id: 'classifyInfoData'
+            , page: true //开启分页
+            , limit: 10
+            , cellMinWidth: 100
+            , limits: [10, 20, 30, 40, 50]
+            , initSort: {
+                field: 'id' //排序字段，对应 cols 设定的各字段名
+                , type: 'asc' //排序方式  asc: 升序、desc: 降序、null: 默认排序
+            }
+            // , toolbar: "#toolbarDemo"
+            , cols: [
+                [
+                    {type: 'checkbox'}
+                    , {field: 'id', title: 'ID', sort: true}
+                    , {field: 'cName', title: '分类名称', align: 'center'}
+                    , {field: 'cParentId', title: '上级分类名称'/*,edit:'text'*/, align: 'center'}
+                    , {
+                    field: 'createTime', title: '创建时间', sort: true, templet: function (d) {
+                        return dateToStr(d.createTime);
+                    }
+                }
+                    , {
+                    field: 'updateTime', title: '更新时间', sort: true, templet: function (d) {
+                        return dateToStr(d.updateTime);
+                    }
+                }
+                    , {fixed: 'right', title: '操作', toolbar: '#barDemo'}
+                ]
+            ]
+        });
+
+        //监听表格行点击
+        table.on('tr', function (obj) {
+            console.log(obj)
+        });
+
+        //监听表格复选框选择
+        table.on('checkbox(classifyInfo)', function (obj) {
+            console.log(obj)
+        });
+
+        //监听表格单选框选择
+        table.on('radio(classifyInfo)', function (obj) {
+            console.log(obj)
+        });
+
+        //监听单元格编辑
+        table.on('edit(classifyInfo)', function (obj) {
+            var value = obj.value //得到修改后的值
+                , data = obj.data //得到所在行所有键值
+                , field = obj.field; //得到字段
+            console.log("value=" + value)
+            console.log("data=" + JSON.stringify(data))
+            console.log("field=" + field)
+        });
+
+        /**
+         * 搜索框载
+         * @type {pe}
+         */
+        var $ = layui.$, active = {
+            reload: function () {
+                var keyWord = $('#searchReload').val();
+                var keyType = $("#key_type option:selected").val();
+                //执行重载
+                table.reload('classifyInfoData', {
+                    method: 'post',
+                    page: {
+                        curr: 1 //重新从第 1 页开始
+                    }
+                    , where: {
+                        keyWord: keyWord,
+                        keyType: keyType
+                    }
+                });
+            }
+        };
+        $('.searchBtn').on('click', function () {
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+
+
+        //自定义工具栏监听事件
+        table.on('toolbar(classifyInfo)', function (obj) {
+            var checkStatus = table.checkStatus(obj.config.id);
+            switch (obj.event) {
+                case 'getSelect':
+                    layer.msg("这是查询", {icon: 6, anim: 6});
+                    break;
+                case 'getInsert':
+                    layer.msg("这是新增", {icon: 6, anim: 6});
+                    break;
+                case 'getUpdate':
+                    layer.msg("这是修改", {icon: 6, anim: 6});
+                    break;
+                case 'getDelete':
+                    layer.msg("这是删除", {icon: 6, anim: 6});
+                    break;
+                case 'getRefresh':
+                    layer.msg("这是刷新", {icon: 6, anim: 6});
+                    location.reload();
+                    break;
+            }
+        });
+        //监听工具条
+        table.on('tool(classifyInfo)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'detail') {
+                layer.msg('ID：' + data.id + ' 的查看操作');
+            } else if (obj.event === 'del') {
+                layer.confirm('真的删除行么', function (index) {
+                    $.ajax({
+                        url:'/classify/delete?id='+data.id,
+                        success:function (result){
+                            if(result.state==0){
+                                obj.del();
+                                layer.close(index);
+                                window.location.reload();
+                                layer.msg(result.message, {icon: 4, anim: 4})
+                            }else {
+                                layer.msg(result.message, {icon: 4, anim: 4})
+                                layer.close(index);
+                            }
+                        },
+                        error: function () {
+                            layer.msg("删除失败", {icon: 4, anim: 4})
+                        }
+                    })
+                });
+            } else if (obj.event === 'edit') {
+                // layer.alert('编辑行：<br>' + JSON.stringify(data))
+                layer.open({
+                    type: 2,
+                    title: "编辑页面", //不显示标题栏
+                    closeBtn: 2,
+                    offset: ['5%', '25%'],//设置位移
+                    area: ['900px', '700px'],
+                    // btn: ['保存', '取消'],
+                    content: '/classify/editClassifyPage?id=' + data.id, //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
+                });
+            }
+        });
+        //树形菜单
+        var setting = {
+            /*是否允许编辑节点
+            edit: {
+                enable: true,
+                editNameSelectAll: true,
+                showRemoveBtn: true,
+                removeTitle: "删除节点",
+                showRenameBtn: true,
+                renameTitle: "编辑节点"
+            },*/
+            data: {
+                simpleData: {
+                    enable: true
+                }
+            },
+            callback: {
+                /* beforeRemove: beforeRemove,  //移除前
+                 beforeRename: beforeRename,   //重命名前
+                 //onRemove: onRemove,
+                 onRename: onRename,
+                 beforeDrag: beforeDrag,*/
+                onClick: zTreeOnClick //注册节点的点击事件
+            },
+            /*view: {
+                selectedMulti: false,
+                // addHoverDom: addHoverDom, //移入节点显示编辑按钮
+                removeHoverDom: removeHoverDom  //移入节点显示编辑按钮
+            },*/
+        };
+
+        //初始化第一个树
+        //获取部门tree数据
+        function loadTree() {
+            $.ajax({
+                type: 'POST',
+                contentType: '',
+                url: "/classify/getClassify",
+                data: {},
+                timeout: 1000, //超时时间设置，单位毫秒
+                dataType: 'json',
+                success: function (res) {
+                    zNodes = []; //初始化ztree
+                    for (var i = 0; i < res.length; i++) {
+                        var data = res[i]
+                        zNodes.push({
+                            'id': data.id,
+                            'pId': data.parentId,
+                            'name': data.name,
+                            'open': true
+                        });
+                    }
+                    zTreeObj = $.fn.zTree.init($("#treeDemo"), setting, zNodes); //初始化ztree
+                }
+            })
+
+        }
+
+        $(document).ready(function () {
+            loadTree();
+        });
+
+        /*鼠标移入节点，显示编辑按钮
+        function addHoverDom(treeId, treeNode) {  //treeNode是当前hover的节点信息
+            var sObj = $("#" + treeNode.tId + "_span");
+            if (treeNode.editNameFlag || $("#addBtn_" + treeNode.tId).length > 0) return;
+            var addStr = "<span class='button add' id='addBtn_" + treeNode.tId
+                + "' title='添加节点' οnfοcus='this.blur();'></span>";
+            sObj.after(addStr);
+            var btn = $("#addBtn_" + treeNode.tId);
+
+            //判断该部门下是否有人员，用于删除节点时，当节点下有信息，禁止删除。
+            var data1 = {
+                "id": treeNode.id
+            };
+            $.ajax({
+                type: 'POST',
+                url: "",
+                data: data1,
+                timeout: 1000, //超时时间设置，单位毫秒
+                dataType: 'json',
+                success: function (res) {
+                    //console.log(res);
+                    if (res.flag == 0) {
+                        var datalist = res.data;
+                        if (datalist.length == 0) {
+                            hasMember = false;
+                        } else {
+                            hasMember = true;
+                        }
+                    } else {
+                        hasMember = true;
+                    }
+                }
+            });
+            //当点击添加按钮时：
+            if (btn) btn.bind("click", function () {
+                var zTree = $.fn.zTree.getZTreeObj("treeDemo");
+                console.log(treeNode.id);
+                var name = "新部门" + (newCount++);
+                var newNode;
+                //发送请求保存一个新建的节点，后台返回ID，用返回的ID新增节点
+                var data = {
+                    "code": treeNode.id,
+                    "name": name
+                };
+                $.ajax({
+                    type: 'post',
+                    url: "",
+                    data: data,
+                    timeout: 1000, //超时时间设置，单位毫秒
+                    dataType: 'json',
+                    success: function (res) {
+                        console.log(res)
+                        if (res.flag == 0) {
+                            var newId = res.data;
+                            //在树节点上增加节点
+                            newNode = zTree.addNodes(treeNode, {id: newId, pId: treeNode.id, name: name});
+                            zTree.editName(newNode[0]) //新增的节点进入编辑状态
+                        }
+                    }
+                });
+                return false;
+            });
+        }*/
+
+        /*添加根节点
+        $('.addnode').click(function () {
+            var zTree = $.fn.zTree.getZTreeObj("treeDemo"),
+                nodes = zTree.getNodes();
+            console.log(nodes)
+
+            var name = "新部门" + (newCount++);
+            var newNode;
+            //发送请求保存一个新建的节点，根据返回ID添加新节点
+            var data = {
+                "code": 0,
+                "name": name
+            };
+            $.ajax({
+                type: 'post',
+                url: "",
+                data: data,
+                timeout: 1000, //超时时间设置，单位毫秒
+                dataType: 'json',
+                success: function (res) {
+                    console.log(res)
+                    if (res.flag == 0) {
+                        var newId = res.data;
+                        newNode = zTree.addNodes(null, {id: newId, pId: null, name: name});
+                        zTree.editName(newNode[0]);  //新增后显示编辑状态
+                    }
+                }
+            });
+        });*/
+
+        /*重命名之前的判断
+        function beforeRename(treeId, treeNode, newName) {
+            if (newName.length == 0) {
+                layer.msg("节点名称不能为空.");
+                var zTree = $.fn.zTree.getZTreeObj("treeDemo");
+                setTimeout(function () {
+                    zTree.editName(treeNode)
+                }, 10);
+                return false;
+            }
+            return true;
+        }*/
+
+        /*修改节点信息
+        function onRename(event, treeId, treeNode, isCancel) {
+            if (isCancel) {
+                return;
+            }
+            var zTree = $.fn.zTree.getZTreeObj("treeDemo");
+            var onodes = zTree.getNodes()
+            console.log(onodes);
+            //发送请求修改节点信息
+            var data = {
+                "id": treeNode.id,
+                "code": treeNode.pId,  //父节点
+                "name": treeNode.name,
+            };
+            $.ajax({
+                type: 'post',
+                url: "",
+                data: data,
+                timeout: 1000, //超时时间设置，单位毫秒
+                dataType: 'json',
+                success: function (res) {
+                    layer.msg(res.msg)
+                }
+            });
+        }*/
+
+        /*删除之前的判断
+        function beforeRemove(treeId, treeNode) {
+            $.ajax({
+                type: 'get',
+                url: "/classify/getChildrenByParentId?id=" + treeNode.id,
+                success: function (res) {
+                    console.log(res);
+                    if (res.state == 0) {
+                    debugger
+                        layer.alert('该分类下还有分类，不能删除');
+                        return false;
+                    } else {
+                        var oFlag = confirm("确认删除 节点 -- " + treeNode.name + " 吗？");
+                        if (oFlag) {
+                            $.ajax({
+                                type: 'post',
+                                url: "",
+                                data: data,
+                                timeout: 1000, //超时时间设置，单位毫秒
+                                dataType: 'json',
+                                success: function (res) {
+                                    console.log(res)
+                                    if (res.flag == 0) {
+                                        layer.msg(res.msg)
+                                        return true;
+                                    } else {
+                                        layer.msg(res.msg);
+                                        return false;
+                                    }
+                                }
+                            })
+                        } else {
+                            return false
+                        }
+                    }
+                }
+            })
+        }*/
+
+        /*function removeHoverDom(treeId, treeNode) {
+            // $("#addBtn_" + treeNode.tId).unbind().remove();
+        };*/
+
+        /*function beforeDrag() {
+            return false;  //禁止所有拖拽功能
+        }*/
+
+        //当点击节点
+        function zTreeOnClick(event, treeId, treeNode) {
+            console.log(treeNode.id + ", " + treeNode.name);
+            //这里根据节点ID获取对应信息或进行对应的操作
+            //点击查询响应的table
+            // 搜索条件
+            var keyWord = treeNode.id;
+            var keyType = "id";
+            if (treeNode.id=='000'){
+                keyWord = null;
+                keyType = null;
+            }
+
+            table.reload('classifyInfoData', {
+                method: 'post'
+                , where: {
+                    keyWord: keyWord,
+                    keyType: keyType
+                }
+                , page: {
+                    curr: 1
+                }
+            });
+        }
+        $("#addClassifyBtn").click(function () {
+            console.log(11111111111)
+            layer.open({
+                type: 2,
+                title: "添加分类", //不显示标题栏
+                closeBtn: 2,
+                offset: ['5%', '25%'],//设置位移
+                area: ['900px', '700px'],
+                // btn: ['保存', '取消'],
+                content: ['/classify/addClassify'] //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
+            });
+        })
+    })
+
+</script>
+<script type="text/html" id="barDemo">
+    <a id="edit" class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+</script>
+<script type="text/javascript">
+
+</script>
+<div class="layui-row" id="zTreeDiv">
+    <div class="layui-col-md2">
+        <fieldset style="height: 80%;border-color: #00F7DE">
+            <div id="treeDemo" class="ztree"></div>
+        </fieldset>
+    </div>
+    <div class="layui-col-md10" id="classifyTableDiv">
+        <fieldset style="height: 80%;border-color:#00F7DE ">
+            <div class="searchTable">
+                <div>
+    <span>
+       搜索:
+    </span>
+                    <div class="layui-inline">
+                        <input class="layui-input" name="keyWord" id="searchReload" autocomplete="off"
+                               style="width: 300px;"
+                               placeholder="请输入关键词并选择对应类型">
+                    </div>
+                    <span class="layui-input-block" style="margin-left: 0px;">
+        选择搜索类型:
+                 <select name="keyType" id="key_type" class="layui-select"
+                         style="width: 100px; background-color: aquamarine">
+                <option value="cName" selected="selected">分类名称</option>
+                     <!--                <option value="sign">姓名</option>-->
+                     <!--                <option value="phone">手机号</option>-->
+                     <!--                <option value="city">城市</option>-->
+                     <!--                <option value="sex">性别</option>-->
+            </select>
+    </span>
+                    <button class="layui-btn searchBtn layui-btn-radius" data-type="reload">搜索</button>
+                    <button class="layui-btn addBtn layui-btn-radius" id="addClassifyBtn">添加分类</button>
+                </div>
+                <table id="classifyInfo" lay-filter="classifyInfo"></table>
+            </div>
+        </fieldset>
+    </div>
+</div>
+
+
+
+
+
